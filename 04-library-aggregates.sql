@@ -1,3 +1,60 @@
+WITH active_loans_stats AS (
+	SELECT 
+		r.id AS reader_id,
+		r.name AS reader_name,
+		(
+			SELECT count(l.id)
+			FROM loans AS l
+			WHERE l.reader_id = r.id
+				AND l.return_date IS NULL
+		) AS active_loans
+	FROM readers AS r
+),
+avg_active_loans_stats AS (
+	SELECT avg(active_loans) AS avg_active_loans
+	FROM active_loans_stats 
+)
+SELECT
+	reader_id,
+	reader_name,
+	active_loans 
+FROM active_loans_stats
+WHERE active_loans > (
+	SELECT avg_active_loans
+	FROM avg_active_loans_stats
+)
+ORDER BY active_loans DESC;
+
+
+WITH book_stats AS (
+	SELECT 
+		b.id AS book_id,
+		b.title,
+			(
+				SELECT count(l.id)
+				FROM loans AS l
+				WHERE b.id = l.book_id 
+			) AS loans_count
+	FROM books AS b
+)
+SELECT
+	book_id,
+	title,
+	loans_count
+FROM book_stats
+WHERE loans_count > (
+	SELECT avg(loans_count)
+	FROM book_stats
+)
+ORDER BY loans_count DESC;
+
+
+SELECT *
+FROM books
+LEFT JOIN loans
+	ON loans.book_id = books.id;
+
+
 SELECT 
 	id AS reader_id,
 	name AS reader_name
